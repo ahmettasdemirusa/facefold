@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}{{ t('nav.settings') }} · Facefold{% endblock %}
+
+{% block body %}
+<h1>{{ t('nav.settings') }}</h1>
+
+<div class="card">
+  <h3>{{ t('settings.language') }}</h3>
+  <form method="post" action="{{ url_for('dil') }}">
+    <input type="hidden" name="next" value="{{ url_for('ayarlar') }}">
+    <label class="field">
+      <select name="lang">
+        {% for code, label in languages.items() %}
+        <option value="{{ code }}" {{ 'selected' if lang == code }}>
+          {{ label }}{% if lang_coverage[code] < 100 %} ({{ lang_coverage[code] }}%){% endif %}
+        </option>
+        {% endfor %}
+      </select>
+      <small>{{ t('settings.language_help')|safe }}</small>
+    </label>
+    <button class="btn small" type="submit">{{ t('common.save') }}</button>
+  </form>
+</div>
+
+<form method="post" action="{{ url_for('api_settings') }}">
+
+  <div class="card">
+    <h3>{{ t('ayarlar.output') }}</h3>
+    <label class="field">
+      <span>{{ t('ayarlar.output_dir') }}</span>
+      <input type="text" name="output_dir" value="{{ settings.output_dir }}">
+      <small>
+        {{ t('ayarlar.output_dir_help') }}
+      </small>
+    </label>
+
+    <label class="field">
+      <span>{{ t('ayarlar.link_mode') }}</span>
+      <select name="link_mode">
+        {% for key, label in link_modes.items() %}
+        <option value="{{ key }}" {{ 'selected' if settings.link_mode == key }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <small>
+        {{ t('ayarlar.link_mode_help')|safe }}
+      </small>
+    </label>
+
+    {% if settings.sources %}
+      {% if link_check[0] %}
+      <div class="note good">{{ link_check[1] }}</div>
+      {% else %}
+      <div class="note warn">{{ link_check[1] }}</div>
+      {% endif %}
+    {% endif %}
+
+    <label class="inline-check">
+      <input type="checkbox" name="date_subfolders" {{ 'checked' if settings.date_subfolders }}>
+      {{ t('ayarlar.date_subfolders') }}
+    </label>
+  </div>
+
+  <div class="card">
+    <h3>{{ t('ayarlar.accuracy') }}</h3>
+    <p class="small dim" style="margin-top:-4px">
+      {{ t('ayarlar.accuracy_help')|safe }}
+    </p>
+
+    <div class="grid g2">
+      <label class="field">
+        <span>{{ t('ayarlar.min_det_score') }} ({{ settings.min_det_score }})</span>
+        <input type="number" name="min_det_score" value="{{ settings.min_det_score }}"
+               min="0.1" max="0.95" step="0.05">
+        <small>{{ t('ayarlar.min_det_score_help') }}</small>
+      </label>
+
+      <label class="field">
+        <span>{{ t('ayarlar.min_face_px') }}</span>
+        <input type="number" name="min_face_px" value="{{ settings.min_face_px }}"
+               min="16" max="300" step="2">
+        <small>{{ t('ayarlar.min_face_px_help') }}</small>
+      </label>
+
+      <label class="field">
+        <span>{{ t('ayarlar.cluster_distance') }} ({{ settings.cluster_distance }})</span>
+        <input type="number" name="cluster_distance" value="{{ settings.cluster_distance }}"
+               min="0.3" max="0.8" step="0.05">
+        <small>
+          {{ t('ayarlar.cluster_distance_help') }}
+        </small>
+      </label>
+
+      <label class="field">
+        <span>{{ t('ayarlar.match_strong') }} ({{ settings.match_strong }})</span>
+        <input type="number" name="match_strong" value="{{ settings.match_strong }}"
+               min="0.4" max="0.9" step="0.05">
+        <small>{{ t('ayarlar.match_strong_help') }}</small>
+      </label>
+
+      <label class="field">
+        <span>{{ t('ayarlar.match_weak') }} ({{ settings.match_weak }})</span>
+        <input type="number" name="match_weak" value="{{ settings.match_weak }}"
+               min="0.2" max="0.6" step="0.05">
+        <small>{{ t('ayarlar.match_weak_help') }}</small>
+      </label>
+
+      <label class="field">
+        <span>{{ t('ayarlar.detect_max_side') }}</span>
+        <input type="number" name="detect_max_side" value="{{ settings.detect_max_side }}"
+               min="640" max="4000" step="160">
+        <small>{{ t('ayarlar.detect_max_side_help') }}</small>
+      </label>
+
+      <label class="field">
+        <span>{{ t('ayarlar.workers') }}</span>
+        <input type="number" name="workers" value="{{ settings.workers }}" min="1" max="16">
+        <small>{{ t('ayarlar.workers_help') }}</small>
+      </label>
+    </div>
+  </div>
+
+  <button class="btn primary" type="submit">{{ t('ayarlar.save') }}</button>
+</form>
+
+<h2>{{ t('ayarlar.status') }}</h2>
+<div class="card">
+  <table class="small">
+    <tr>
+      <td class="dim" style="width:220px">{{ t('ayarlar.model') }}</td>
+      <td>
+        {% if model_ready %}
+          <span class="tag-chip on">{{ t('ayarlar.model_ready') }}</span>
+          <span class="faint">~/.insightface/models/buffalo_l</span>
+        {% else %}
+          <span class="tag-chip">{{ t('ayarlar.model_missing') }}</span>
+          <span class="faint">{{ t('ayarlar.model_note') }}</span>
+        {% endif %}
+      </td>
+    </tr>
+    <tr><td class="dim">{{ t('ayarlar.data_dir') }}</td><td class="mono wrap-any">{{ settings.output_dir }}</td></tr>
+    <tr><td class="dim">{{ t('ayarlar.version') }}</td><td>Facefold {{ version }}</td></tr>
+    <tr><td class="dim">{{ t('ayarlar.internet') }}</td><td>
+      {{ t('ayarlar.internet_note') }}
+    </td></tr>
+  </table>
+</div>
+
+{% if errors %}
+<h2>{{ t('ayarlar.errors') }}</h2>
+<div class="card">
+  <table class="small">
+    <tr><th>{{ t('ayarlar.errors_file') }}</th><th>{{ t('ayarlar.errors_error') }}</th></tr>
+    {% for e in errors %}
+    <tr>
+      <td>{{ e.file_name }}</td>
+      <td class="faint mono wrap-any">{{ e.error }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<h2>{{ t('ayarlar.maintenance') }}</h2>
+<div class="card">
+  <div class="spread">
+    <div>
+      <h3 style="margin:0">{{ t('ayarlar.reanalyse') }}</h3>
+      <span class="small dim">
+        {{ t('ayarlar.reanalyse_help') }}
+      </span>
+    </div>
+    <form method="post" action="{{ url_for('api_reanalyse') }}"
+          onsubmit="return confirm('{{ t('ayarlar.reanalyse_confirm') }}')">
+      <button class="btn danger small" type="submit">{{ t('ayarlar.reanalyse_button') }}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}{{ t('kategoriler.title') }} · Facefold{% endblock %}
+
+{% block body %}
+<h1>{{ t('kategoriler.title') }}</h1>
+<p class="lede">
+  {{ t('kategoriler.lede')|safe }}
+</p>
+
+<div class="card">
+  <table class="small">
+    <tr><td style="width:210px"><b>{{ t('kategoriler.ex_solo') }}</b></td>
+        <td class="dim mono">Alice/</td></tr>
+    <tr><td><b>{{ t('kategoriler.ex_pair') }}</b></td>
+        <td class="dim mono">Alice {{ t('folder.and') }} Bruno/</td></tr>
+    <tr><td><b>{{ t('kategoriler.ex_crowd', n=auto_settings.max_people + 1) }}</b></td>
+        <td class="dim mono">{{ t('folder.crowd') }}/</td></tr>
+    <tr><td><b>{{ t('kategoriler.ex_unknown') }}</b></td>
+        <td class="dim mono">{{ t('folder.unknown') }}/</td></tr>
+    <tr><td><b>{{ t('kategoriler.ex_faceless') }}</b></td>
+        <td class="dim mono">{{ t('folder.faceless') }}/</td></tr>
+  </table>
+  <p class="small faint" style="margin:12px 0 0">
+    {{ t('kategoriler.ex_note') }}
+  </p>
+</div>
+
+{% if not persons %}
+<div class="note warn" style="margin-top:14px">
+  {{ t('kategoriler.need_names_pre') }}
+  <a href="{{ url_for('kisiler') }}">{{ t('kategoriler.need_names_link') }}</a>.
+  {{ t('kategoriler.need_names_post') }}
+</div>
+{% endif %}
+
+<h2>{{ t('kategoriler.plan_heading') }}</h2>
+{% if auto_plan.combos or auto_plan.unknown or auto_plan.faceless %}
+<div class="card">
+  <table>
+    <tr><th>{{ t('kategoriler.col_folder') }}</th><th>{{ t('kategoriler.col_contents') }}</th><th class="num">{{ t('kategoriler.col_photos') }}</th></tr>
+    {% for c in auto_plan.combos %}
+    <tr>
+      <td><b>{{ c.folder }}</b></td>
+      <td class="dim small">
+        {% if c.people|length == 1 %}{{ t('kategoriler.only_person', name=c.names[0]) }}
+        {% else %}{{ t('kategoriler.exactly_these', names=c.names|join(' + ')) }}{% endif %}
+      </td>
+      <td class="num">{{ c.count }}</td>
+    </tr>
+    {% endfor %}
+    {% if auto_plan.crowd %}
+    <tr><td><b>{{ t('folder.crowd') }}</b></td>
+        <td class="dim small">{{ t('kategoriler.crowd_desc', n=auto_plan.max_people) }}</td>
+        <td class="num">{{ auto_plan.crowd }}</td></tr>
+    {% endif %}
+    {% if auto_plan.unknown %}
+    <tr><td><b>{{ t('folder.unknown') }}</b></td>
+        <td class="dim small">{{ t('kategoriler.unknown_desc') }}</td>
+        <td class="num">{{ auto_plan.unknown }}</td></tr>
+    {% endif %}
+    {% if auto_plan.faceless %}
+    <tr><td><b>{{ t('folder.faceless') }}</b></td>
+        <td class="dim small">{{ t('kategoriler.faceless_desc') }}</td>
+        <td class="num">{{ auto_plan.faceless }}</td></tr>
+    {% endif %}
+  </table>
+</div>
+
+<div class="row" style="margin-top:12px">
+  <button class="btn primary" data-job="dagitim"
+          {{ 'disabled' if job and job.state == 'running' }}>
+    {{ t('kategoriler.build_btn') }}
+  </button>
+  <button class="btn" data-open="{{ settings.output_dir }}">{{ t('kategoriler.open_output') }}</button>
+</div>
+{% else %}
+<div class="empty">
+  {{ t('kategoriler.empty_plan') }}
+  <a href="{{ url_for('kisiler') }}">{{ t('kategoriler.go_people') }}</a>
+</div>
+{% endif %}
+
+<details style="margin-top:26px">
+  <summary style="cursor:pointer;color:var(--text-dim);font-size:15px;font-weight:600">
+    {{ t('kategoriler.advanced') }}
+  </summary>
+
+  <div class="card" style="margin-top:12px">
+    <h3>{{ t('kategoriler.auto_heading') }}</h3>
+    <form method="post" action="{{ url_for('api_auto_settings') }}">
+      <label class="inline-check" style="margin-bottom:12px">
+        <input type="checkbox" name="enabled" {{ 'checked' if auto_settings.enabled }}>
+        {{ t('kategoriler.auto_enable') }}
+      </label>
+      <div class="grid g2">
+        <label class="field">
+          <span>{{ t('kategoriler.max_people_label') }}</span>
+          <input type="number" name="max_people" value="{{ auto_settings.max_people }}"
+                 min="1" max="6">
+          <small>
+            {{ t('kategoriler.max_people_help') }}
+          </small>
+        </label>
+        <label class="field">
+          <span>{{ t('kategoriler.min_photos_label') }}</span>
+          <input type="number" name="min_photos" value="{{ auto_settings.min_photos }}"
+                 min="1" max="50">
+          <small>
+            {{ t('kategoriler.min_photos_help') }}
+          </small>
+        </label>
+      </div>
+      <button class="btn" type="submit">{{ t('common.save') }}</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>{{ t('kategoriler.manual_heading') }}</h3>
+    <p class="small dim" style="margin-top:-4px">
+      {{ t('kategoriler.manual_lede') }}
+    </p>
+    {% set manual = categories|selectattr('origin', 'equalto', 'manual')|list %}
+    {% if manual %}
+    <table>
+      <tr><th>{{ t('kategoriler.col_folder') }}</th><th>{{ t('kategoriler.col_rule') }}</th><th class="num">{{ t('kategoriler.col_files') }}</th><th></th></tr>
+      {% for c in manual %}
+      <tr>
+        <td><b>{{ c.name }}</b><br><span class="mono faint small">{{ c.folder }}\</span></td>
+        <td class="small dim">
+          {{ rule_types.get(c.rule_type, c.rule_type) }}
+          {% if c.people_names %}<br><span class="tag-chip">{{ c.people_names|join(' + ') }}</span>{% endif %}
+        </td>
+        <td class="num">{{ c.linked }}</td>
+        <td style="width:1%">
+          <div class="row tight">
+            <form method="post" action="{{ url_for('api_category_update', cat_id=c.id) }}">
+              <input type="hidden" name="enabled" value="{{ 0 if c.enabled else 1 }}">
+              <button class="btn small ghost" type="submit">{{ t('kategoriler.turn_off') if c.enabled else t('kategoriler.turn_on') }}</button>
+            </form>
+            <form method="post" action="{{ url_for('api_category_delete', cat_id=c.id) }}"
+                  onsubmit="return confirm('{{ t('kategoriler.delete_confirm', name=c.name) }}')">
+              <button class="btn small ghost" type="submit">{{ t('common.delete') }}</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p class="small faint" style="margin:0">{{ t('kategoriler.manual_empty') }}</p>
+    {% endif %}
+  </div>
+
+  {% if pair_ideas or solo_ideas %}
+  <div class="card">
+    <h3>{{ t('kategoriler.ideas_heading') }}</h3>
+    <div class="row">
+      {% for p in pair_ideas %}
+      <button class="btn small" data-suggest='{{ {"name": p.suggested_name, "rule_type": "exact", "people": p.people}|tojson }}'>
+        {{ p.suggested_name }} <span class="faint">· {{ p.count }}</span>
+      </button>
+      {% endfor %}
+      {% for s in solo_ideas %}
+      <button class="btn small" data-suggest='{{ {"name": "Sadece " ~ s.name, "rule_type": "solo", "people": [s.person_id]}|tojson }}'>
+        {{ t('kategoriler.only_name', name=s.name) }} <span class="faint">· {{ s.count }}</span>
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <form class="card" id="rule-form" method="post" action="{{ url_for('api_category_add') }}">
+    <h3>{{ t('kategoriler.new_rule') }}</h3>
+    <div class="grid g2">
+      <label class="field">
+        <span>{{ t('kategoriler.rule_name') }}</span>
+        <input type="text" name="name" placeholder="{{ t('kategoriler.rule_name_ph') }}" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>{{ t('kategoriler.col_rule') }}</span>
+        <select name="rule_type">
+          {% for key, label in rule_types.items() %}
+          <option value="{{ key }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+
+    <div id="people-box">
+      <span style="display:block;font-size:13px;font-weight:550;color:var(--text-dim);margin-bottom:6px">
+        {{ t('nav.people') }}
+      </span>
+      {% if persons %}
+      <div class="row" style="gap:14px">
+        {% for p in persons %}
+        <label class="inline-check">
+          <input type="checkbox" name="people" value="{{ p.id }}"> {{ p.name }}
+        </label>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="small faint" style="margin:0">{{ t('kategoriler.no_persons') }}</p>
+      {% endif %}
+    </div>
+
+    <div class="grid g2" style="margin-top:14px">
+      <div>
+        <label class="inline-check" style="margin-bottom:9px">
+          <input type="checkbox" name="ignore_unknown" checked>
+          {{ t('kategoriler.ignore_unknown') }}
+        </label>
+        <label class="inline-check">
+          <input type="checkbox" name="include_duplicates">
+          {{ t('kategoriler.include_duplicates') }}
+        </label>
+      </div>
+      <div>
+        <label class="field">
+          <span>{{ t('kategoriler.min_face_px') }}</span>
+          <input type="number" name="min_face_px" value="0" min="0" max="500" step="10">
+        </label>
+        <div class="grid g2">
+          <label class="field"><span>{{ t('kategoriler.date_from') }}</span><input type="date" name="date_from"></label>
+          <label class="field"><span>{{ t('kategoriler.date_to') }}</span><input type="date" name="date_to"></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="spread" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+      <span class="row tight">
+        <span class="small dim">{{ t('kategoriler.rule_now') }}</span>
+        <span class="tag-chip" id="rule-count">-</span>
+      </span>
+      <button class="btn primary" type="submit">{{ t('kategoriler.add_rule') }}</button>
+    </div>
+  </form>
+</details>
+{% endblock %}

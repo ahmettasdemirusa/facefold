@@ -1,0 +1,93 @@
+# ---------------------------------------------------------------------------
+# Facefold verileri - kullaniciya ozel, asla paylasilmaz
+# ---------------------------------------------------------------------------
+# Bu bolum, kullanicinin kendi fotograflarinin yanlislikla yayinlanmasini
+# engeller. Kurallar bilerek genis tutuldu: bir katkici "git add -A" yazdiginda
+# kendi aile fotograflarini GitHub'a gondermemeli.
+
+veri/
+veri_*/
+*.db
+*.db-wal
+*.db-shm
+
+# Cikti klasoru. Program bunu Turkce harflerle de yazar ("Düzenlenmiş"),
+# belgelerde de oyle gecer - iki yazilis da kapsanmali. Ayrica kullanici
+# klasore baska bir ad vermis olabilir diye asagidaki uzanti kurallari var.
+Duzenlenmis/
+Düzenlenmiş/
+duzenlenmis/
+düzenlenmiş/
+
+# Rapor kipinde uretilen dosya: her fotografin TAM disk yolunu ve kullanicinin
+# verdigi gercek kisi adlarini bir arada tasir.
+facefold-rapor.csv
+
+# ---------------------------------------------------------------------------
+# Hicbir fotograf, video ya da arsiv depoya girmesin
+# ---------------------------------------------------------------------------
+# Yukaridaki klasor adlarina guvenmek yetmez: kullanici fotograflarini baska
+# bir ada koyabilir, ya da bir Takeout zip'ini denemek icin proje klasorune
+# kopyalayabilir. Bu yuzden medya dosyalari uzantilariyla da engellenir ve
+# depoya girmesi gereken az sayidaki gorsel asagida tek tek geri acilir.
+
+*.jpg
+*.jpeg
+*.jpe
+*.png
+*.gif
+*.heic
+*.heif
+*.avif
+*.webp
+*.tif
+*.tiff
+*.bmp
+*.mp4
+*.mov
+*.m4v
+*.avi
+*.mkv
+*.3gp
+*.mpg
+*.mpeg
+*.zip
+*.rar
+*.7z
+
+# Depoya girmesi gereken tek gorseller: belgelerdeki ve tanitim sitesindeki
+# ekran goruntuleri. Bunlar sentetik ornek kutuphaneden alinir ve yuzleri
+# bulaniklastirilmistir (bkz. README > Gizlilik).
+#
+# Baska bir gorsel eklemeniz gerekiyorsa (simge, cizim) "git add -f dosya.png"
+# yazin. Bu ekstra adim bilerek konuldu: bir fotografin depoya girmesi kaza
+# eseri olmamali, bilincli bir karar olmali.
+!docs/ekranlar/
+!docs/ekranlar/*.png
+!site/ekranlar/
+!site/ekranlar/*.png
+
+# Ornek kutuphane yerelde uretilir, depoya girmez:
+#   python tests/make_fixtures.py
+tests/ornek_fotograflar/
+
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+build/
+dist/
+
+# ---------------------------------------------------------------------------
+# Editor / isletim sistemi
+# ---------------------------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}{{ t('tekil.title') }} · Facefold{% endblock %}
+
+{% block body %}
+<h1>{{ t('tekil.title') }}</h1>
+<p class="lede">
+  {{ t('tekil.lede') }}
+</p>
+
+{% if faces %}
+<div class="card">
+  <div class="row">
+    <b>{{ t('tekil.count', n="{:,}".format(total).replace(",", ".")) }}</b>
+    <span class="dim small">{{ t('tekil.showing', n=faces|length) }}</span>
+    <span style="flex:1"></span>
+    <button class="btn small" data-pick-all="tekil">{{ t('common.select_all') }}</button>
+    <button class="btn small ghost" data-pick-none="tekil">{{ t('common.clear_selection') }}</button>
+  </div>
+</div>
+
+<div class="card" style="margin-top:10px;position:sticky;top:60px;z-index:10">
+  <div class="row">
+    <span class="dim small">{{ t('tekil.picked_label') }}</span>
+    <select data-move-select="tekil" style="max-width:220px">
+      <option value="">{{ t('tekil.pick_person') }}</option>
+      {% for p in persons %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}
+    </select>
+    <button class="btn small primary" data-move-group="tekil">{{ t('tekil.assign') }}</button>
+    <span class="dim small">{{ t('tekil.or') }}</span>
+    <input type="text" data-new-person="tekil" placeholder="{{ t('tekil.new_name_placeholder') }}"
+           style="max-width:180px" autocomplete="off">
+    <button class="btn small" data-create-person="tekil">{{ t('tekil.create_person') }}</button>
+  </div>
+</div>
+
+<div class="faces" data-group="tekil" style="margin-top:12px">
+  {% for f in faces %}
+  <label class="face-pick" title="{{ f.file_name }}">
+    <input type="checkbox" value="{{ f.id }}">
+    <img src="{{ url_for('yuz', face_id=f.id) }}" alt="" loading="lazy">
+    <div class="cap">
+      {{ f.face_px }}px{% if f.age %} · ~{{ f.age }}{% endif %}
+      {% if not f.camera %}<br><span class="faint">{{ t('tekil.tag_screen') }}</span>{% endif %}
+    </div>
+  </label>
+  {% endfor %}
+</div>
+
+{% set pages = (total // per_page) + (1 if total % per_page else 0) %}
+{% if pages > 1 %}
+<div class="pager">
+  {% if page > 1 %}<a class="btn small" href="{{ url_for('tekil', s=page-1) }}">{{ t('common.previous') }}</a>{% endif %}
+  <span class="small dim">{{ page }} / {{ pages }}</span>
+  {% if page < pages %}<a class="btn small" href="{{ url_for('tekil', s=page+1) }}">{{ t('common.next') }}</a>{% endif %}
+</div>
+{% endif %}
+
+<h2>{{ t('tekil.why_title') }}</h2>
+<div class="card small dim">
+  <p style="margin-top:0">
+    {{ t('tekil.why_group', n=3) }}
+  </p>
+  <p style="margin-bottom:0">
+    {{ t('tekil.why_screen')|safe }}
+  </p>
+</div>
+
+{% else %}
+<div class="empty">
+  {% if counts.faces %}
+    {{ t('tekil.empty_done') }}
+  {% else %}
+    {{ t('tekil.empty_scan', link=url_for('panel'))|safe }}
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

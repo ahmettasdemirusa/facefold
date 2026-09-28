@@ -1,0 +1,10 @@
+# Metin dosyalarini depoda LF olarak sakla, Windows'ta CRLF olarak ac.
+* text=auto eol=lf
+
+# Windows toplu is dosyalari CRLF olmak zorunda.
+*.bat text eol=crlf
+
+# Ikili dosyalar
+*.png binary
+*.jpg binary
+*.onnx binary

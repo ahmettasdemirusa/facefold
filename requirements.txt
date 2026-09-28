@@ -1,0 +1,16 @@
+# Facefold - Python 3.10+
+#
+# Kurulum:  python -m pip install -r requirements.txt
+#
+# Yuz tanima modeli (buffalo_l, ~280 MB) ilk calistirmada otomatik iner ve
+# ~/.insightface/models altina kaydedilir. Sonrasinda internet gerekmez.
+
+numpy>=1.24
+pillow>=10.0
+pillow-heif>=0.13        # iPhone HEIC/HEIF dosyalari
+scipy>=1.11              # algisal parmak izi (DCT)
+scikit-learn>=1.3        # yuz gruplamasi
+onnxruntime>=1.16        # model calistirici (CPU)
+insightface>=0.7         # yuz tespiti + kimlik vektoru
+Flask>=3.0               # yerel arayuz
+send2trash>=1.8          # silinen dosyalar Geri Donusum Kutusu'na gider

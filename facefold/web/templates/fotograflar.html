@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}{{ t('nav.photos') }} · Facefold{% endblock %}
+
+{% block body %}
+<h1>{{ t('nav.photos') }}</h1>
+<p class="lede">
+  {{ t('fotograflar.lede', n="{:,}".format(total).replace(",", ".")) }}
+</p>
+
+<div class="card">
+  <form method="get" class="row">
+    <select name="kisi" onchange="this.form.submit()" style="max-width:210px">
+      <option value="">{{ t('fotograflar.filter_everyone') }}</option>
+      {% for p in persons %}
+      <option value="{{ p.id }}" {{ 'selected' if person_id == p.id }}>{{ p.name }}</option>
+      {% endfor %}
+    </select>
+    <select name="tur" onchange="this.form.submit()" style="max-width:230px">
+      <option value="">{{ t('fotograflar.filter_normal') }}</option>
+      <option value="taninmayan" {{ 'selected' if only == 'taninmayan' }}>{{ t('fotograflar.filter_unknown') }}</option>
+      <option value="yuzsuz" {{ 'selected' if only == 'yuzsuz' }}>{{ t('fotograflar.filter_faceless') }}</option>
+      <option value="kopya" {{ 'selected' if only == 'kopya' }}>{{ t('nav.duplicates') }}</option>
+    </select>
+    {% if person_id or only %}
+    <a class="btn small ghost" href="{{ url_for('fotograflar') }}">{{ t('fotograflar.clear_filter') }}</a>
+    {% endif %}
+  </form>
+</div>
+
+{% if photos %}
+<div class="card" style="margin-top:10px;position:sticky;top:60px;z-index:10">
+  <div class="row">
+    <button class="btn small" data-pick-all="shots">{{ t('fotograflar.pick_page') }}</button>
+    <button class="btn small" id="pick-every"
+            data-total="{{ total }}"
+            data-url="{{ url_for('api_photo_ids', kisi=person_id, tur=only) }}">
+      {{ t('fotograflar.pick_every', n="{:,}".format(total).replace(",", ".")) }}
+    </button>
+    <button class="btn small ghost" data-pick-none="shots">{{ t('common.clear_selection') }}</button>
+    <b class="small" id="shot-count">{{ t('common.selected', n=0) }}</b>
+    <span style="flex:1"></span>
+    <button class="btn small danger" data-delete-picked>{{ t('fotograflar.delete_picked') }}</button>
+  </div>
+
+  <div class="row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+    <span class="small dim">{{ t('fotograflar.assign_label') }}</span>
+    <select id="assign-person" style="max-width:240px">
+      <option value="__new__">{{ t('fotograflar.new_person') }}</option>
+      <option value="" disabled>--------</option>
+      {% for p in persons %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}
+    </select>
+    <button class="btn small primary" id="assign-go">{{ t('fotograflar.assign') }}</button>
+    <span style="flex:1"></span>
+    <button class="btn small" id="match-now">{{ t('fotograflar.rematch') }}</button>
+  </div>
+
+  <p class="small faint" style="margin:8px 0 0">
+    {{ t('fotograflar.assign_help') }}
+    {{ t('common.recycle_note')|safe }}
+  </p>
+</div>
+
+<div class="shots" data-group="shots" style="margin-top:12px">
+  {% for p in photos %}
+  <label class="shot shot-pick" title="{{ p.file_name }}">
+    <input type="checkbox" value="{{ p.id }}">
+    <img src="{{ url_for('kucuk', photo_id=p.id) }}" alt="" loading="lazy">
+    <span class="tag">
+      {% if p.face_count > 0 %}{{ p.face_count }} {{ t('common.faces') }}{% else %}{{ t('common.no_face') }}{% endif %}
+    </span>
+    <a class="open" href="{{ url_for('fotograf', photo_id=p.id) }}" title="{{ t('fotograflar.details') }}">&#8599;</a>
+  </label>
+  {% endfor %}
+</div>
+
+{% set pages = (total // per_page) + (1 if total % per_page else 0) %}
+{% if pages > 1 %}
+<div class="pager">
+  {% if page > 1 %}
+  <a class="btn small" href="{{ url_for('fotograflar', s=page-1, kisi=person_id, tur=only) }}">{{ t('common.previous') }}</a>
+  {% endif %}
+  <span class="small dim">{{ page }} / {{ pages }}</span>
+  {% if page < pages %}
+  <a class="btn small" href="{{ url_for('fotograflar', s=page+1, kisi=person_id, tur=only) }}">{{ t('common.next') }}</a>
+  {% endif %}
+</div>
+{% endif %}
+
+<h2>{{ t('fotograflar.cleanup_title') }}</h2>
+<div class="card">
+  <div class="row">
+    <button class="btn small danger" data-delete-which="duplicates"
+            data-describe="Bayt bayt ayni olan kopyalar silinecek (saklanan asillar kalir).">
+      {{ t('fotograflar.delete_exact') }}
+    </button>
+    <button class="btn small danger" data-delete-which="faceless"
+            data-describe="Icinde yuz olmayan butun kareler silinecek - manzara, ekran goruntusu, belge.">
+      {{ t('fotograflar.delete_faceless', n=counts.no_face) }}
+    </button>
+  </div>
+  <p class="small faint" style="margin:10px 0 0">
+    {{ t('fotograflar.cleanup_note') }}
+    <br>{{ t('fotograflar.cleanup_exact_only', link=url_for('kopyalar'))|safe }}
+  </p>
+</div>
+
+{% else %}
+<div class="empty" style="margin-top:14px">{{ t('common.empty') }}</div>
+{% endif %}
+{% endblock %}

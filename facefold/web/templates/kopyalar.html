@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ t('nav.duplicates') }} · Facefold{% endblock %}
+
+{% block body %}
+<h1>{{ t('nav.duplicates') }}</h1>
+<p class="lede">
+  {{ t('kopyalar.lede')|safe }}
+</p>
+
+{% if groups %}
+<p class="small dim">
+  {{ t('kopyalar.count', n=groups|length) }}
+</p>
+
+{% for g in groups %}
+<div class="card">
+  <div class="spread" style="margin-bottom:10px">
+    <div>
+      <b>{{ g.master.file_name }}</b>
+      <span class="tag-chip on">{{ t('kopyalar.kept') }}</span>
+      <br><span class="small faint mono wrap-any">{{ g.master.path }}</span>
+    </div>
+    <span class="small dim">
+      {{ t('kopyalar.group_meta', n=g.copies|length,
+            mb=((g.master.wasted or 0) / 1048576)|round(1)) }}
+    </span>
+  </div>
+
+  <div class="shots">
+    <a class="shot" href="{{ url_for('fotograf', photo_id=g.master.id) }}">
+      <img src="{{ url_for('kucuk', photo_id=g.master.id) }}" alt="" loading="lazy">
+      <span class="tag" style="background:var(--good)">{{ t('kopyalar.original') }}</span>
+    </a>
+    {% for c in g.copies %}
+    <a class="shot" href="{{ url_for('fotograf', photo_id=c.id) }}" title="{{ c.path }}">
+      <img src="{{ url_for('kucuk', photo_id=c.id) }}" alt="" loading="lazy">
+      <span class="tag">{{ t('kopyalar.exact') if c.dup_kind == 'exact' else t('kopyalar.visual') }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+
+{% else %}
+<div class="empty">
+  {% if counts.done %}
+    {{ t('kopyalar.none') }}
+  {% else %}
+    {{ t('kopyalar.scan_first') }} <a href="{{ url_for('panel') }}">{{ t('kopyalar.go_panel') }}</a>
+  {% endif %}
+</div>
+{% endif %}
+
+<h2>{{ t('kopyalar.how_title') }}</h2>
+<div class="card small dim">
+  <p style="margin-top:0">{{ t('kopyalar.how_lede')|safe }}</p>
+  <ol style="margin:0;padding-left:20px">
+    <li>{{ t('kopyalar.check1') }}</li>
+    <li>{{ t('kopyalar.check2') }}</li>
+    <li>{{ t('kopyalar.check3') }}</li>
+  </ol>
+  <p style="margin-bottom:0">
+    {{ t('kopyalar.how_note') }}
+  </p>
+</div>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}{{ t('nav.sources') }} · Facefold{% endblock %}
+
+{% block body %}
+<h1>{{ t('nav.sources') }}</h1>
+<p class="lede">
+  {{ t('kaynaklar.lede')|safe }}
+</p>
+
+{% if error %}<div class="note bad">{{ error }}</div>{% endif %}
+
+<div class="card">
+  <h3>{{ t('kaynaklar.add_title') }}</h3>
+  <form method="post" action="{{ url_for('api_source_add') }}">
+    <label class="field">
+      <span>{{ t('kaynaklar.path_label') }}</span>
+      <input type="text" name="path" placeholder="{{ t('kaynaklar.path_placeholder') }}" required
+             autocomplete="off" autofocus>
+      <small>
+        {{ t('kaynaklar.path_help')|safe }}
+      </small>
+    </label>
+    <button class="btn primary" type="submit">{{ t('kaynaklar.add_btn') }}</button>
+  </form>
+</div>
+
+<h2>{{ t('kaynaklar.list_title') }}</h2>
+{% if sources %}
+<div class="card">
+  <table>
+    <tr><th>{{ t('kaynaklar.col_folder') }}</th><th class="num">{{ t('kaynaklar.col_photos') }}</th><th></th></tr>
+    {% for s in sources %}
+    <tr>
+      <td>
+        <span class="mono wrap-any">{{ s.path }}</span>
+        {% if not s.exists %}
+          <br><span class="tag-chip" style="background:var(--bad-soft);color:var(--bad)">
+            {{ t('kaynaklar.missing') }}
+          </span>
+        {% endif %}
+      </td>
+      <td class="num">
+        {{ "{:,}".format(s.photos).replace(",", ".") }}
+        {% if s.in_archives %}
+        <br><span class="faint small">{{ t('kaynaklar.in_zip', n=s.in_archives) }}</span>
+        {% endif %}
+      </td>
+      <td style="width:1%">
+        <form method="post" action="{{ url_for('api_source_remove') }}"
+              onsubmit="return confirm('{{ t('kaynaklar.remove_confirm', n=s.photos) }}')">
+          <input type="hidden" name="path" value="{{ s.path }}">
+          <button class="btn small ghost" type="submit">{{ t('kaynaklar.remove_btn') }}</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+
+<div class="row" style="margin-top:14px">
+  <button class="btn primary" data-job="hepsi"
+          {{ 'disabled' if job and job.state == 'running' }}>{{ t('kaynaklar.scan_all') }}</button>
+  <button class="btn" data-job="tarama">{{ t('kaynaklar.scan_new') }}</button>
+</div>
+{% else %}
+<div class="empty">
+  {{ t('kaynaklar.empty') }}
+</div>
+{% endif %}
+
+{% if takeout_preview and takeout_preview.sidecars %}
+<h2>{{ t('kaynaklar.takeout_title') }}</h2>
+<div class="card">
+  <p class="small dim" style="margin-top:0">
+    {{ t('kaynaklar.takeout_lede')|safe }}
+  </p>
+  <table class="small">
+    <tr><td class="dim" style="width:240px">{{ t('kaynaklar.takeout_sidecars') }}</td>
+        <td>{{ takeout_preview.sidecars }}</td></tr>
+    <tr><td class="dim">{{ t('kaynaklar.takeout_matched') }}</td>
+        <td>{{ takeout_preview.matched }}</td></tr>
+    <tr><td class="dim">{{ t('kaynaklar.takeout_dates') }}</td>
+        <td><b>{{ takeout_preview.dates }}</b> {{ t('common.photos') }}</td></tr>
+    <tr><td class="dim">{{ t('kaynaklar.takeout_certain') }}</td>
+        <td>{{ takeout_preview.certain }} {{ t('common.faces') }}</td></tr>
+  </table>
+  {% if takeout_preview.people %}
+  <div class="row" style="margin-top:10px">
+    {% for ad, n in takeout_preview.people %}
+    <span class="tag-chip">{{ ad }} · {{ n }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div class="row" style="margin-top:12px">
+    <button class="btn primary" data-takeout>{{ t('kaynaklar.takeout_import') }}</button>
+  </div>
+  <p class="small faint" style="margin:10px 0 0">
+    {{ t('kaynaklar.takeout_note') }}
+  </p>
+</div>
+{% endif %}
+
+<h2>{{ t('kaynaklar.places_title') }}</h2>
+<div class="card small dim">
+  <table>
+    <tr>
+      <td><b>{{ t('kaynaklar.place_phone') }}</b></td>
+      <td class="mono">{{ t('kaynaklar.place_phone_hint') }}</td>
+    </tr>
+    <tr>
+      <td><b>{{ t('kaynaklar.place_google') }}</b></td>
+      <td class="mono">{{ t('kaynaklar.place_google_hint') }}</td>
+    </tr>
+    <tr>
+      <td><b>{{ t('kaynaklar.place_windows') }}</b></td>
+      <td class="mono">C:\Users\{{ settings.language and '' }}...\Pictures</td>
+    </tr>
+    <tr>
+      <td><b>WhatsApp</b></td>
+      <td class="mono">...\WhatsApp\Media\WhatsApp Images</td>
+    </tr>
+  </table>
+  <p style="margin:10px 0 0">
+    {{ t('kaynaklar.places_note') }}
+  </p>
+</div>
+{% endblock %}

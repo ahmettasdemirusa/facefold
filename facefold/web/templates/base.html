@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Facefold{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23b4532a'/><circle cx='16' cy='13' r='5' fill='white'/><path d='M6 28c0-6 5-9 10-9s10 3 10 9z' fill='white'/></svg>">
+</head>
+<body>
+<div class="shell">
+
+  <nav class="side">
+    <div class="brand">
+      <span class="dot"></span>
+      <span>Facefold<small>{{ t('app.tagline') }}</small></span>
+    </div>
+
+    <div class="nav">
+      <a href="{{ url_for('panel') }}" class="{{ 'on' if request.endpoint == 'panel' }}">
+        {{ t('nav.panel') }}
+      </a>
+      <a href="{{ url_for('kaynaklar') }}" class="{{ 'on' if request.endpoint == 'kaynaklar' }}">
+        {{ t('nav.sources') }}
+        <span class="pill">{{ settings.sources|length }}</span>
+      </a>
+
+      <div class="sep"></div>
+
+      <a href="{{ url_for('kisiler') }}" class="{{ 'on' if request.endpoint in ('kisiler','kisi','grup') }}">
+        {{ t('nav.people') }}
+        <span class="pill">{{ counts.persons }}{% if counts.clusters %} +{{ counts.clusters }}{% endif %}</span>
+      </a>
+      <a href="{{ url_for('tekil') }}" class="{{ 'on' if request.endpoint == 'tekil' }}">
+        {{ t('nav.singles') }}
+        <span class="pill">{{ counts.loose }}</span>
+      </a>
+      <a href="{{ url_for('kategoriler') }}" class="{{ 'on' if request.endpoint == 'kategoriler' }}">
+        {{ t('nav.categories') }}
+        <span class="pill">{{ counts.categories }}</span>
+      </a>
+
+      <div class="sep"></div>
+
+      <a href="{{ url_for('fotograflar') }}" class="{{ 'on' if request.endpoint in ('fotograflar','fotograf') }}">
+        {{ t('nav.photos') }}
+        <span class="pill">{{ counts.done }}</span>
+      </a>
+      <a href="{{ url_for('kopyalar') }}" class="{{ 'on' if request.endpoint == 'kopyalar' }}">
+        {{ t('nav.duplicates') }}
+        <span class="pill">{{ counts.duplicates }}</span>
+      </a>
+
+      <div class="sep"></div>
+
+      <a href="{{ url_for('ayarlar') }}" class="{{ 'on' if request.endpoint == 'ayarlar' }}">
+        {{ t('nav.settings') }}
+      </a>
+    </div>
+  </nav>
+
+  <main class="main">
+
+    <div class="job" id="job-box" {% if not job or job.state != 'running' %}hidden{% endif %}
+         data-was="{{ 'running' if job and job.state == 'running' }}">
+      <div class="spread">
+        <span class="msg" id="job-msg">{{ job.message if job else '' }}</span>
+        <span class="row tight">
+          <span class="detail" id="job-detail"></span>
+          <button class="btn small ghost" data-stop>{{ t('common.stop') }}</button>
+        </span>
+      </div>
+      <div class="bar" id="job-bar"><i id="job-fill" style="width:0%"></i></div>
+    </div>
+
+    {% block body %}{% endblock %}
+  </main>
+</div>
+
+<!-- The sentences app.js needs. It cannot read the Python dictionary, so the
+     "js." keys ride along here - before the script that looks them up. -->
+<script>window.FACEFOLD_T = {{ js_strings|tojson }};</script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

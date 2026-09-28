@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}{{ t('nav.panel') }} · Facefold{% endblock %}
+
+{% block body %}
+<h1>{{ t('nav.panel') }}</h1>
+<p class="lede">
+  {{ t('panel.lede') }}
+</p>
+
+{% for kind, message in warnings %}
+  <div class="note warn">{{ message }}</div>
+{% endfor %}
+
+<div class="grid g3">
+  <div class="card stat">
+    <span class="n">{{ "{:,}".format(counts.done).replace(",", ".") }}</span>
+    <span class="l">
+      {{ t('common.photos') }}
+      {% if counts.in_archives %}<br><span class="faint">{{ t('panel.in_archives', n=counts.in_archives) }}</span>{% endif %}
+    </span>
+  </div>
+  <div class="card stat">
+    <span class="n">{{ "{:,}".format(counts.faces).replace(",", ".") }}</span>
+    <span class="l">{{ t('common.faces') }}</span>
+  </div>
+  <div class="card stat">
+    <span class="n">{{ counts.persons }}</span>
+    <span class="l">{{ t('panel.named_people') }}</span>
+  </div>
+  <div class="card stat">
+    <span class="n">{{ "{:,}".format(counts.duplicates).replace(",", ".") }}</span>
+    <span class="l">{{ t('panel.duplicates') }}</span>
+  </div>
+</div>
+
+<h2>{{ t('panel.steps_title') }}</h2>
+<div class="steps">
+
+  <div class="step {{ 'done' if settings.sources }}">
+    <span class="n"></span>
+    <span class="t">
+      <b>{{ t('panel.step1_title') }}</b>
+      <span>
+        {% if settings.sources %}
+          {{ t('panel.step1_count', n=settings.sources|length) }}
+          {% if counts.in_archives %}{{ t('panel.step1_zip') }}{% endif %}
+        {% else %}
+          {{ t('panel.step1_hint') }}
+        {% endif %}
+      </span>
+    </span>
+    <a class="btn small {{ 'primary' if not settings.sources }}"
+       href="{{ url_for('kaynaklar') }}">{{ t('panel.step1_btn') }}</a>
+  </div>
+
+  <div class="step {{ 'done' if counts.persons }}">
+    <span class="n"></span>
+    <span class="t">
+      <b>{{ t('panel.step2_title') }}</b>
+      <span>
+        {% if counts.pending %}
+          {{ t('panel.step2_pending', n="{:,}".format(counts.pending).replace(",", ".")) }}
+        {% elif counts.clusters %}
+          {{ t('panel.step2_clusters', n=counts.clusters) }}
+        {% elif counts.persons %}
+          {{ t('panel.step2_persons', n=counts.persons) }}
+        {% else %}
+          {{ t('panel.step2_empty') }}
+        {% endif %}
+      </span>
+    </span>
+    <span class="row tight">
+      <button class="btn small {{ 'primary' if settings.sources and not counts.done }}"
+              data-job="hepsi"
+              {{ 'disabled' if not settings.sources or (job and job.state == 'running') }}>
+        {% if counts.done %}{{ t('panel.rescan') }}{% else %}{{ t('panel.scan_start') }}{% endif %}
+      </button>
+      <a class="btn small {{ 'primary' if counts.clusters }}" href="{{ url_for('kisiler') }}">{{ t('nav.people') }}</a>
+    </span>
+  </div>
+
+  <div class="step">
+    <span class="n"></span>
+    <span class="t">
+      <b>{{ t('panel.step3_title') }}</b>
+      <span>
+        {% if auto_plan and auto_plan.total_folders %}
+          {{ t('panel.step3_plan', n=auto_plan.total_folders) }} ·
+        {% endif %}
+        <span class="mono">{{ settings.output_dir }}</span>
+      </span>
+    </span>
+    <button class="btn small {{ 'primary' if counts.persons }}" data-job="dagitim"
+            {{ 'disabled' if not counts.persons or (job and job.state == 'running') }}>
+      {{ t('panel.create_btn') }}
+    </button>
+  </div>
+</div>
+
+{% if auto_plan and (auto_plan.combos or auto_plan.unknown or auto_plan.faceless) %}
+<h2>{{ t('panel.plan_title') }}</h2>
+<p class="small dim" style="margin-top:-6px">
+  {{ t('panel.plan_lede') }}
+</p>
+<div class="card">
+  <table>
+    {% for c in auto_plan.combos %}
+    <tr>
+      <td>
+        {{ c.folder }}
+        {% if c.people|length > 1 %}<span class="tag-chip">{{ t('panel.pair') }}</span>{% endif %}
+      </td>
+      <td class="num">{{ c.count }}</td>
+    </tr>
+    {% endfor %}
+    {% if auto_plan.crowd %}
+    <tr><td class="dim">{{ t('panel.crowd') }} <span class="tag-chip off">{{ t('panel.crowd_size', n=auto_plan.max_people) }}</span></td>
+        <td class="num">{{ auto_plan.crowd }}</td></tr>
+    {% endif %}
+    {% if auto_plan.unknown %}
+    <tr><td class="dim">{{ t('panel.unknown') }}</td><td class="num">{{ auto_plan.unknown }}</td></tr>
+    {% endif %}
+    {% if auto_plan.faceless %}
+    <tr><td class="dim">{{ t('panel.faceless') }}</td><td class="num">{{ auto_plan.faceless }}</td></tr>
+    {% endif %}
+  </table>
+</div>
+{% endif %}
+
+{% if summary and summary|selectattr('files')|list %}
+<h2>{{ t('panel.on_disk') }}</h2>
+<div class="card">
+  <table>
+    <tr><th>{{ t('panel.col_folder') }}</th><th class="num">{{ t('panel.col_files') }}</th><th></th></tr>
+    {% for s in summary if s.files %}
+    <tr>
+      <td>{{ s.name }}</td>
+      <td class="num">{{ s.files }}</td>
+      <td style="width:1%">
+        <button class="btn small ghost"
+                data-open="{{ settings.output_dir }}\{{ s.folder }}">{{ t('common.open') }}</button>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+<div class="row" style="margin-top:10px">
+  <button class="btn small" data-open="{{ settings.output_dir }}">{{ t('panel.open_output') }}</button>
+</div>
+{% endif %}
+
+<h2>{{ t('panel.history') }}</h2>
+<div class="card">
+  {% if recent %}
+  <table>
+    {% for r in recent %}
+    <tr>
+      <td style="width:110px">{{ r.kind }}</td>
+      <td>
+        <span class="tag-chip {{ 'on' if r.state == 'done' else ('off' if r.state != 'hata') }}">
+          {{ r.state }}
+        </span>
+      </td>
+      <td class="small dim wrap-any">{{ r.message or '' }}</td>
+      <td class="small faint" style="width:140px">{{ r.started_at }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="dim small" style="margin:0">{{ t('panel.history_empty') }}</p>
+  {% endif %}
+</div>
+
+<details style="margin-top:20px">
+  <summary style="cursor:pointer;color:var(--text-dim);font-size:14px;font-weight:550">
+    {{ t('panel.manual') }}
+  </summary>
+  <div class="card" style="margin-top:10px">
+    <div class="row">
+      <button class="btn small" data-job="tarama">{{ t('panel.job_scan') }}</button>
+      <button class="btn small" data-job="analiz">{{ t('panel.job_faces') }}</button>
+      <button class="btn small" data-job="kopya">{{ t('panel.job_dupes') }}</button>
+      <button class="btn small" data-job="gruplama">{{ t('panel.job_group') }}</button>
+      <button class="btn small" data-job="tanima">{{ t('panel.job_match') }}</button>
+      <button class="btn small" data-job="dagitim">{{ t('panel.job_build') }}</button>
+    </div>
+    <p class="small faint" style="margin:10px 0 0">
+      {{ t('panel.manual_note') }}
+    </p>
+  </div>
+</details>
+{% endblock %}

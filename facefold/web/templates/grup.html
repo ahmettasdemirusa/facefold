@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}{{ t('grup.group_n', n=cluster.id) }} · Facefold{% endblock %}
+
+{% block body %}
+<div class="spread">
+  <div>
+    <h1>{{ t('grup.title') }}</h1>
+    <p class="lede" style="margin-bottom:0">
+      {{ t('grup.lede', n=cluster.size) }}
+    </p>
+  </div>
+  <a class="btn" href="{{ url_for('kisiler') }}">{{ t('common.back') }}</a>
+</div>
+
+<div class="card" style="margin-top:18px">
+  <form method="post" action="{{ url_for('api_name_cluster', cluster_id=cluster.id) }}">
+    <div class="row">
+      <input type="text" name="name" placeholder="{{ t('grup.name_placeholder') }}" list="isimler"
+             style="max-width:280px" autocomplete="off" required autofocus>
+      <button class="btn primary" type="submit">{{ t('grup.name_button') }}</button>
+      <button class="btn ghost" type="button" data-hide-group="{{ cluster.id }}"
+              onclick="setTimeout(()=>location.href='{{ url_for('kisiler') }}',200)">
+        {{ t('grup.hide') }}
+      </button>
+    </div>
+    <p class="small faint" style="margin:8px 0 0">
+      {{ t('grup.name_help') }}
+    </p>
+  </form>
+</div>
+
+<datalist id="isimler">
+  {% for p in persons %}<option value="{{ p.name }}">{% endfor %}
+</datalist>
+
+{% if similar and similar[0].similarity > 0.35 %}
+<h2>{{ t('grup.similar_title') }}</h2>
+<div class="card">
+  <table>
+    <tr><th>{{ t('grup.col_group') }}</th><th class="num">{{ t('grup.col_faces') }}</th><th class="num">{{ t('grup.col_similarity') }}</th><th></th></tr>
+    {% for s in similar %}
+      {% if s.similarity > 0.3 %}
+      <tr>
+        <td>
+          <a href="{{ url_for('grup', cluster_id=s.id) }}">
+            <img src="{{ url_for('grup_kapak', cluster_id=s.id) }}"
+                 style="width:34px;height:34px;border-radius:50%;object-fit:cover;vertical-align:middle">
+            {{ t('grup.group_n', n=s.id) }}
+          </a>
+        </td>
+        <td class="num">{{ s.size }}</td>
+        <td class="num">{{ "%.2f"|format(s.similarity) }}</td>
+        <td style="width:1%">
+          <button class="btn small" onclick="mergeInto({{ s.id }})">{{ t('grup.merge_with') }}</button>
+        </td>
+      </tr>
+      {% endif %}
+    {% endfor %}
+  </table>
+</div>
+<script>
+async function mergeInto(other) {
+  await fetch('/api/grup/birlestir', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ target: {{ cluster.id }}, others: [other] })
+  });
+  location.reload();
+}
+</script>
+{% endif %}
+
+<h2>{{ t('grup.faces_title') }}</h2>
+
+<div class="card" id="sel-bar" hidden style="position:sticky;top:60px;z-index:10">
+  <div class="row">
+    <b id="sel-count">{{ t('grup.selected', n=0) }}</b>
+    <select id="sel-person" style="max-width:220px">
+      <option value="">{{ t('kisiler.pick_person') }}</option>
+      {% for p in persons %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}
+    </select>
+    <button class="btn small primary" id="sel-assign">{{ t('grup.assign') }}</button>
+  </div>
+</div>
+
+<div class="faces" style="margin-top:12px">
+  {% for f in members %}
+  <label class="face-pick" title="{{ f.file_name }}">
+    <input type="checkbox" value="{{ f.id }}">
+    <img src="{{ url_for('yuz', face_id=f.id) }}" alt="" loading="lazy">
+    <div class="cap">
+      {% if f.age %}{{ t('grup.age', n=f.age) }}{% endif %}
+    </div>
+  </label>
+  {% endfor %}
+</div>
+
+{% if cluster.size > members|length %}
+<p class="small faint" style="margin-top:10px">
+  {{ t('grup.showing', n=members|length, total=cluster.size) }}
+</p>
+{% endif %}
+{% endblock %}

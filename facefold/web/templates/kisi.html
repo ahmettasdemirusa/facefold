@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}{{ person.name }} · Facefold{% endblock %}
+
+{% block body %}
+<div class="spread">
+  <div class="row">
+    {% if person.cover_face_id %}
+    <img src="{{ url_for('yuz', face_id=person.cover_face_id) }}"
+         style="width:60px;height:60px;border-radius:50%;object-fit:cover">
+    {% endif %}
+    <div>
+      <h1 style="margin:0">{{ person.name }}</h1>
+      <span class="dim small">
+        {{ photos|length }} {{ t('common.photos') }} · {{ face_count }} {{ t('common.faces') }}
+        {% if person.notes %}<span class="tag-chip">{{ person.notes }}</span>{% endif %}
+      </span>
+    </div>
+  </div>
+  <a class="btn" href="{{ url_for('kisiler') }}">{{ t('common.back') }}</a>
+</div>
+
+{% if suggestions %}
+<h2>{{ t('kisi.suggest_title') }}</h2>
+<p class="small dim" style="margin-top:-6px">
+  {{ t('kisi.suggest_lede', name=person.name) }}
+</p>
+<div class="faces" data-group="oneri" style="margin-top:12px">
+  {% for s in suggestions %}
+  <label class="face-pick" title="{{ s.file_name }}">
+    <input type="checkbox" value="{{ s.id }}">
+    <img src="{{ url_for('yuz', face_id=s.id) }}" alt="" loading="lazy">
+    <div class="cap">%{{ (s.similarity * 100)|round|int }}</div>
+  </label>
+  {% endfor %}
+</div>
+<div class="row" style="margin-top:10px">
+  <button class="btn small primary" data-assign-group="oneri" data-person="{{ person.id }}">
+    {{ t('kisi.confirm_button', name=person.name) }}
+  </button>
+</div>
+{% endif %}
+
+<h2>
+  {{ t('kisi.faces_title', name=person.name) }}
+  <span class="tag-chip">{{ person_faces|length }}</span>
+</h2>
+<p class="small dim" style="margin-top:-6px">
+  {{ t('kisi.faces_lede', name=person.name) }}
+</p>
+
+{% if person_faces %}
+<div class="faces" data-group="benim" style="margin-top:12px">
+  {% for f in person_faces %}
+  <label class="face-pick" title="{{ f.file_name }}">
+    <input type="checkbox" value="{{ f.id }}">
+    <img src="{{ url_for('yuz', face_id=f.id) }}" alt="" loading="lazy">
+    <div class="cap">
+      {% if f.assign_source == 'manual' %}{{ t('kisi.src_manual') }}
+      {% elif f.assign_source == 'takeout' %}Google
+      {% elif f.assign_source == 'auto' %}{{ t('kisi.src_auto', n=(f.confidence * 100)|round|int if f.confidence else '') }}
+      {% else %}{{ t('kisi.src_cluster') }}{% endif %}
+    </div>
+  </label>
+  {% endfor %}
+</div>
+
+<div class="card" style="margin-top:12px">
+  <div class="row">
+    <button class="btn small" data-pick-all="benim">{{ t('common.select_all') }}</button>
+    <button class="btn small ghost" data-pick-none="benim">{{ t('common.clear_selection') }}</button>
+    <span style="flex:1"></span>
+    <button class="btn small" data-detach-group="benim">{{ t('kisi.detach') }}</button>
+    <select data-move-select="benim" style="max-width:200px">
+      <option value="">{{ t('kisi.move_placeholder') }}</option>
+      {% for o in others %}<option value="{{ o.id }}">{{ o.name }}</option>{% endfor %}
+    </select>
+    <button class="btn small" data-move-group="benim">{{ t('kisi.move') }}</button>
+  </div>
+</div>
+{% else %}
+<div class="empty">{{ t('kisi.no_faces') }}</div>
+{% endif %}
+
+<h2>{{ t('kisi.photos_title') }}</h2>
+{% if photos %}
+<div class="shots">
+  {% for p in photos %}
+  <a class="shot" href="{{ url_for('fotograf', photo_id=p.id) }}">
+    <img src="{{ url_for('kucuk', photo_id=p.id) }}" alt="" loading="lazy">
+    {% if p.id in manual_photos %}
+      <span class="tag" style="background:var(--accent)">{{ t('kisi.src_manual') }}</span>
+    {% elif p.taken_at %}<span class="tag">{{ p.taken_at[:7] }}</span>{% endif %}
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty">{{ t('kisi.no_photos') }}</div>
+{% endif %}
+
+<h2>{{ t('kisi.edit_title') }}</h2>
+<div class="grid g2">
+  <div class="card">
+    <h3>{{ t('kisi.rename_title') }}</h3>
+    <form method="post" action="{{ url_for('api_rename_person', person_id=person.id) }}">
+      <div class="row">
+        <input type="text" name="name" value="{{ person.name }}" style="max-width:220px" required>
+        <button class="btn" type="submit">{{ t('common.save') }}</button>
+      </div>
+      <p class="small faint" style="margin:8px 0 0">
+        {{ t('kisi.rename_help') }}
+      </p>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>{{ t('kisi.merge_title') }}</h3>
+    {% if others %}
+    <form method="post" action="{{ url_for('api_merge_person', person_id=person.id) }}"
+          onsubmit="return confirm('{{ t('kisi.merge_confirm', name=person.name) }}')">
+      <div class="row">
+        <select name="other" style="max-width:220px" required>
+          <option value="">{{ t('kisiler.pick_person') }}</option>
+          {% for o in others %}<option value="{{ o.id }}">{{ o.name }}</option>{% endfor %}
+        </select>
+        <button class="btn" type="submit">{{ t('kisiler.merge') }}</button>
+      </div>
+      <p class="small faint" style="margin:8px 0 0">
+        {{ t('kisi.merge_help') }}
+      </p>
+    </form>
+    {% else %}
+    <p class="small dim" style="margin:0">{{ t('kisi.merge_none') }}</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card" style="margin-top:12px">
+  <div class="spread">
+    <div>
+      <h3 style="margin:0">{{ t('kisi.delete_title') }}</h3>
+      <span class="small dim">
+        {{ t('kisi.delete_help') }}
+      </span>
+    </div>
+    <form method="post" action="{{ url_for('api_delete_person', person_id=person.id) }}"
+          onsubmit="return confirm('{{ t('kisi.delete_confirm', name=person.name) }}')">
+      <button class="btn danger small" type="submit">{{ t('kisi.delete_button') }}</button>
+    </form>
+  </div>
+</div>
+
+{% if photos %}
+<div class="card" style="margin-top:12px;border-color:var(--bad)">
+  <div class="spread">
+    <div>
+      <h3 style="margin:0">{{ t('kisi.purge_title') }}</h3>
+      <span class="small dim">
+        {{ t('kisi.purge_help', n=photos|length)|safe }}
+        {% if not trash_ok[0] %}<br><b>{{ trash_ok[1] }}</b>{% endif %}
+      </span>
+    </div>
+    <button class="btn danger small" data-delete-person="{{ person.id }}"
+            data-name="{{ person.name }}" {{ 'disabled' if not trash_ok[0] }}>
+      {{ t('kisi.purge_button') }}
+    </button>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

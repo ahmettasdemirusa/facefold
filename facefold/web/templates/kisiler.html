@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}{{ t('nav.people') }} · Facefold{% endblock %}
+
+{% block body %}
+<h1>{{ t('nav.people') }}</h1>
+<p class="lede">
+  {{ t('kisiler.lede')|safe }}
+</p>
+
+{# ---- how far along the user is, so "am I done?" has an answer ---- #}
+<div class="card">
+  <div class="spread" style="margin-bottom:10px">
+    <b>{{ t('kisiler.named_count', n=state.persons) }}</b>
+    <span class="small dim">
+      {{ t('kisiler.linked',
+            a="{:,}".format(state.sorted_photos).replace(",", "."),
+            b="{:,}".format(state.photos).replace(",", ".")) }}
+    </span>
+  </div>
+  <div class="bar"><i style="width:{{ state.photo_percent }}%"></i></div>
+  <p class="small faint" style="margin:9px 0 0">
+    {{ t('kisiler.face_percent', n=state.face_percent) }}
+    {% if state.big_groups %}
+      {{ t('kisiler.worth', n=state.groups, big=state.big_groups, gain=state.next_gain)|safe }}
+    {% endif %}
+  </p>
+</div>
+
+{# ---- two people who are probably one person ---- #}
+{% if merges %}
+<h2>{{ t('kisiler.merge_title') }}</h2>
+<p class="small dim" style="margin-top:-6px">
+  {{ t('kisiler.merge_lede') }}
+</p>
+{% for m in merges %}
+<div class="card">
+  <div class="spread">
+    <div>
+      <b>{{ m.keep_name }}</b> <span class="faint">({{ m.keep_faces }} {{ t('common.faces') }})</span>
+      <span class="dim">{{ t('kisiler.merge_and') }}</span>
+      <b>{{ m.drop_name }}</b> <span class="faint">({{ m.drop_faces }} {{ t('common.faces') }})</span>
+      <br>
+      <span class="small dim">
+        {{ t('kisiler.similarity', n=m.similarity) }}
+        {% if m.confident %}<span class="tag-chip on">{{ t('kisiler.very_high') }}</span>{% endif %}
+      </span>
+    </div>
+    <button class="btn small primary" data-merge-keep="{{ m.keep_id }}"
+            data-merge-drop="{{ m.drop_id }}"
+            data-merge-label="{{ m.drop_name }} -> {{ m.keep_name }}">
+      {{ t('kisiler.merge') }}
+    </button>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if persons %}
+<h2>{{ t('kisiler.named_title') }}</h2>
+<div class="people">
+  {% for p in persons %}
+  {% set h = health.get(p.id) %}
+  <a class="person" href="{{ url_for('kisi', person_id=p.id) }}">
+    {% if p.cover_face_id %}
+      <img src="{{ url_for('yuz', face_id=p.cover_face_id) }}" alt="{{ p.name }}">
+    {% else %}
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" alt="">
+    {% endif %}
+    <span class="nm">{{ p.name }}</span>
+    <span class="ct">{{ p.photo_count }} {{ t('common.photos') }}</span>
+    {% if h and h.mixed %}
+      <span class="tag-chip" style="background:var(--warn-soft);color:var(--warn)">
+        {{ t('kisiler.mixed') }}
+      </span>
+    {% endif %}
+  </a>
+  {% endfor %}
+</div>
+{% if health.values()|selectattr('mixed')|list %}
+<p class="small dim" style="margin-top:10px">
+  {{ t('kisiler.mixed_help')|safe }}
+</p>
+{% endif %}
+{% endif %}
+
+<h2>
+  {{ t('kisiler.unnamed_title') }}
+  {% if state.groups %}<span class="tag-chip">{{ state.groups }}</span>{% endif %}
+</h2>
+
+{% if groups %}
+<p class="small dim" style="margin-top:-6px">
+  {{ t('kisiler.unnamed_lede') }}
+</p>
+
+<div class="groups">
+  {% for g in groups %}
+  <div class="group-card">
+    <a href="{{ url_for('grup', cluster_id=g.id) }}">
+      <img src="{{ url_for('grup_kapak', cluster_id=g.id) }}" alt="{{ t('grup.group_n', n=g.id) }}" loading="lazy">
+    </a>
+    <div class="body">
+      <div class="ct">
+        <b style="color:var(--text)">{{ g.photos }} {{ t('common.photos') }}</b>
+        {% if g.first_seen and g.last_seen and g.first_seen[:4] != g.last_seen[:4] %}
+          <br>{{ g.first_seen[:4] }}–{{ g.last_seen[:4] }}
+        {% elif g.first_seen %}
+          <br>{{ g.first_seen[:7] }}
+        {% endif %}
+      </div>
+      <form method="post" action="{{ url_for('api_name_cluster', cluster_id=g.id) }}">
+        <input type="text" name="name" placeholder="{{ t('kisiler.name_placeholder') }}" list="isimler"
+               autocomplete="off" required>
+        <div class="row tight">
+          <button class="btn small primary" type="submit">{{ t('common.save') }}</button>
+          <button class="btn small ghost" type="button" data-hide-group="{{ g.id }}">{{ t('kisiler.hide') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<datalist id="isimler">
+  {% for p in persons %}<option value="{{ p.name }}">{% endfor %}
+</datalist>
+
+{% set pages = (state.groups // per_page) + (1 if state.groups % per_page else 0) %}
+{% if pages > 1 %}
+<div class="pager">
+  {% if page > 1 %}<a class="btn small" href="{{ url_for('kisiler', s=page-1) }}">{{ t('common.previous') }}</a>{% endif %}
+  <span class="small dim">{{ page }} / {{ pages }}</span>
+  {% if page < pages %}<a class="btn small" href="{{ url_for('kisiler', s=page+1) }}">{{ t('common.next') }}</a>{% endif %}
+</div>
+{% endif %}
+
+{% if state.tail_groups %}
+<div class="card" style="margin-top:16px">
+  <div class="spread">
+    <div>
+      <h3 style="margin:0">{{ t('kisiler.tail_title') }}</h3>
+      <span class="small dim">
+        {{ t('kisiler.tail_help', n=state.tail_groups, min=tail_min, faces=state.tail_faces) }}
+      </span>
+    </div>
+    <button class="btn small" data-ignore-tail="{{ tail_min }}">
+      {{ t('kisiler.tail_button', n=state.tail_groups) }}
+    </button>
+  </div>
+</div>
+{% endif %}
+
+{% elif counts.faces %}
+<div class="empty">
+  {{ t('kisiler.none_left') }}
+</div>
+{% else %}
+<div class="empty">
+  {{ t('kisiler.scan_first') }} <a href="{{ url_for('panel') }}">{{ t('kisiler.go_panel') }}</a>
+</div>
+{% endif %}
+
+{% if hidden or loose %}
+<h2>{{ t('kisiler.others_title') }}</h2>
+<div class="card small dim">
+  {% if hidden %}
+  <div class="spread" style="margin-bottom:8px">
+    <span>{{ t('kisiler.hidden_count', n=hidden) }}</span>
+    <button class="btn small ghost" data-unignore>{{ t('kisiler.unhide') }}</button>
+  </div>
+  {% endif %}
+  {% if loose %}
+  {% set tekil_link %}<a href="{{ url_for('tekil') }}">{{ t('kisiler.loose_link') }}</a>{% endset %}
+  <p style="margin:0">
+    {{ t('kisiler.loose', n=loose, link=tekil_link)|safe }}
+  </p>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

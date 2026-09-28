@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}{{ photo.file_name }} · Facefold{% endblock %}
+
+{% block body %}
+<div class="spread">
+  <div>
+    <h1 style="margin:0">{{ photo.file_name }}</h1>
+    <span class="small faint mono wrap-any">{{ photo.path }}</span>
+  </div>
+  <a class="btn" href="{{ url_for('fotograflar') }}">{{ t('common.back') }}</a>
+</div>
+
+<div class="grid g2" style="margin-top:18px;grid-template-columns:minmax(0,2fr) minmax(260px,1fr)">
+  <div class="card" style="padding:8px">
+    <a href="{{ url_for('tam', photo_id=photo.id) }}" target="_blank">
+      <img src="{{ url_for('kucuk', photo_id=photo.id) }}" alt=""
+           style="width:100%;border-radius:var(--radius-sm);display:block">
+    </a>
+  </div>
+
+  <div>
+    <div class="card">
+      <h3>{{ t('fotograf.info') }}</h3>
+      <table class="small">
+        <tr><td class="dim">{{ t('fotograf.taken_at') }}</td><td>
+          {{ photo.taken_at or '-' }}
+          {% if photo.taken_source and photo.taken_source != 'exif' %}
+            <br><span class="tag-chip off">
+              {{ t('fotograf.from_filename') if photo.taken_source == 'filename' else t('fotograf.from_filedate') }}
+            </span>
+          {% endif %}
+        </td></tr>
+        <tr><td class="dim">{{ t('fotograf.dimensions') }}</td><td>{{ photo.width }} x {{ photo.height }}</td></tr>
+        <tr><td class="dim">{{ t('fotograf.file_size') }}</td><td>{{ (photo.size / 1048576)|round(1) }} MB</td></tr>
+        {% if photo.camera %}
+        <tr><td class="dim">{{ t('fotograf.camera') }}</td><td>{{ photo.camera }}</td></tr>
+        {% endif %}
+        {% if photo.gps_lat %}
+        <tr><td class="dim">{{ t('fotograf.location') }}</td><td>
+          <a href="https://www.openstreetmap.org/?mlat={{ photo.gps_lat }}&mlon={{ photo.gps_lon }}#map=15/{{ photo.gps_lat }}/{{ photo.gps_lon }}"
+             target="_blank" rel="noopener">{{ t('fotograf.on_map') }}</a>
+        </td></tr>
+        {% endif %}
+        <tr><td class="dim">{{ t('fotograf.face_count') }}</td><td>{{ photo.face_count }}</td></tr>
+      </table>
+    </div>
+
+    {% if categories %}
+    <div class="card">
+      <h3>{{ t('fotograf.in_folders') }}</h3>
+      <div class="row tight">
+        {% for c in categories %}<span class="tag-chip on">{{ c.name }}</span>{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if photo.duplicate_of %}
+    <div class="note warn">
+      {{ t('fotograf.is_copy', link=url_for('fotograf', photo_id=photo.duplicate_of))|safe }}
+    </div>
+    {% elif copies %}
+    <div class="card">
+      <h3>{{ t('fotograf.copies') }}</h3>
+      <div class="shots">
+        {% for c in copies %}
+        <a class="shot" href="{{ url_for('fotograf', photo_id=c.id) }}" title="{{ c.file_name }}">
+          <img src="{{ url_for('kucuk', photo_id=c.id) }}" alt="" loading="lazy">
+          <span class="tag">{{ t('fotograf.dup_exact') if c.dup_kind == 'exact' else t('fotograf.dup_visual') }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<h2>{{ t('fotograf.faces_title') }}</h2>
+
+{% if faces %}
+<div class="card" id="sel-bar" hidden style="position:sticky;top:60px;z-index:10">
+  <div class="row">
+    <b id="sel-count">{{ t('fotograf.faces_selected', n=0) }}</b>
+    <select id="sel-person" style="max-width:220px">
+      <option value="">{{ t('fotograf.pick_person') }}</option>
+      {% for p in persons %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}
+    </select>
+    <button class="btn small primary" id="sel-assign">{{ t('fotograf.assign') }}</button>
+    <button class="btn small ghost" id="sel-detach">{{ t('fotograf.detach') }}</button>
+  </div>
+</div>
+
+<div class="faces" style="margin-top:12px">
+  {% for f in faces %}
+  <label class="face-pick">
+    <input type="checkbox" value="{{ f.id }}">
+    <img src="{{ url_for('yuz', face_id=f.id) }}" alt="" loading="lazy">
+    <div class="cap">
+      {% if f.name %}
+        <a href="{{ url_for('kisi', person_id=f.person_id) }}">{{ f.name }}</a>
+      {% else %}
+        <span class="faint">{{ t('fotograf.unnamed') }}</span>
+      {% endif %}
+      <br>{{ f.face_px }}px{% if f.age %} · ~{{ f.age }}{% endif %}
+    </div>
+  </label>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty">{{ t('fotograf.no_faces') }}</div>
+{% endif %}
+{% endblock %}
